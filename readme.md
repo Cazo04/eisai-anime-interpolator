@@ -1,133 +1,336 @@
 
 
 
-eisai-anime-interpolator
-========================
+# EISAI Anime Interpolator
+
+<div align="center">
 
 ![](./supplementary/teaser.png)
 
+**Improving the Perceptual Quality of 2D Animation Interpolation**
 
-**Improving the Perceptual Quality of 2D Animation Interpolation**  
-Shuhong Chen[\*](https://shuhongchen.github.io/), Matthias Zwicker[\*](https://www.cs.umd.edu/~zwicker/)  
-ECCV2022  
-\[[arxiv](https://arxiv.org/abs/2111.12792)\]
-\[[github](https://github.com/ShuhongChen/eisai-anime-interpolator)\]
-\[[poster](./eccv2022_eisai_poster.pdf)\]
-\[[video](https://youtu.be/jy4HKnG9YA0)\]
-\[[colab](https://colab.research.google.com/github/ShuhongChen/eisai-anime-interpolator/blob/master/_notebooks/eisai_colab_demo.ipynb)\]  
+[Shuhong Chen](https://shuhongchen.github.io/) · [Matthias Zwicker](https://www.cs.umd.edu/~zwicker/)
 
-*Traditional 2D animation is labor-intensive, often requiring animators to manually draw twelve illustrations per second of movement.  While automatic frame interpolation may ease this burden, 2D animation poses additional difficulties compared to photorealistic video.  In this work, we address challenges unexplored in previous animation interpolation systems, with a focus on improving perceptual quality.  Firstly, we propose SoftsplatLite (SSL), a forward-warping interpolation architecture with fewer trainable parameters and better perceptual performance.  Secondly, we design a Distance Transform Module (DTM) that leverages line proximity cues to correct aberrations in difficult solid-color regions.  Thirdly, we define a Restricted Relative Linear Discrepancy metric (RRLD) to automate the previously manual training data collection process.  Lastly, we explore evaluation of 2D animation generation through a user study, and establish that the LPIPS perceptual metric and chamfer line distance (CD) are more appropriate measures of quality than PSNR and SSIM used in prior art.*
+*ECCV 2022*
 
+[![arXiv](https://img.shields.io/badge/arXiv-2111.12792-b31b1b.svg)](https://arxiv.org/abs/2111.12792)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?logo=github)](https://github.com/ShuhongChen/eisai-anime-interpolator)
+[![Poster](https://img.shields.io/badge/ECCV-Poster-blue)](./eccv2022_eisai_poster.pdf)
+[![Video](https://img.shields.io/badge/YouTube-Video-red?logo=youtube)](https://youtu.be/jy4HKnG9YA0)
+[![Colab](https://img.shields.io/badge/Colab-Demo-orange?logo=google-colab)](https://colab.research.google.com/github/ShuhongChen/eisai-anime-interpolator/blob/master/_notebooks/eisai_colab_demo.ipynb)
 
-## colab demo
+</div>
 
-Notebook sets up colab and runs the [interpolation script](#interpolate-frames) below: [eisai_colab_demo.ipynb](https://colab.research.google.com/github/ShuhongChen/eisai-anime-interpolator/blob/master/_notebooks/eisai_colab_demo.ipynb)  
+---
 
+### 🚩 Note on this Version
 
-## download
+> **Note:** This is a fork of the original project [EISAI Anime Interpolator](https://github.com/ShuhongChen/eisai-anime-interpolator).
+>
+> This version is maintained primarily for **testing, bug fixes, and dependency updates**.
+>
+> All core research and academic contributions belong to the original authors: **[Shuhong Chen](https://shuhongchen.github.io/) and [Matthias Zwicker](https://www.cs.umd.edu/~zwicker/)**.
 
-Downloads can be found in this drive folder: [eccv2022_eisai_anime_interpolator_release](https://drive.google.com/drive/folders/1AiZVgGej7Tpn95ats6967neIEPdShxWy?usp=sharing)
+---
 
-* Download `checkpoints.zip` and extract to the root project directory; the `./checkpoints/` folder should contain the `.pt` files.  Note that `./checkpoints/anime_interp_full.ckpt` is the pretrained model downloaded from [AnimeInterp](https://github.com/lisiyao21/AnimeInterp).  The checkpoints are all you need for inference.
-* For evaluation, download the ATD12k dataset from [AnimeInterp](https://github.com/lisiyao21/AnimeInterp) and our repacked flows `rfr_540p.zip` to create the file structure shown below.  Our repacked flows (SGM+RFR) are not the same as those in the AnimeInterp download (SGM only); it's a bit complicated to [hack](https://github.com/lisiyao21/AnimeInterp/blob/b38358335fcd7361a199c1f7d899d457724ecee0/test_anime_sequence_one_by_one.py#L127) the full SGM+RFR flows from their repo, so we include our zip as a convenience.
+## 📖 Abstract
 
-        # AnimeInterp file structure
-        _data/atd12k/
-            raw/
-                test_2k_540p/  # raw image data from AnimeInterp repo
-                    Disney_ ...
-                    Japan_ ...
-            preprocessed/
-                rfr_540p/  # precomputed flow pickles
-                    test/
-                        Disney_ ...
-                        Japan_ ...
+Traditional 2D animation is labor-intensive, often requiring animators to manually draw twelve illustrations per second of movement. While automatic frame interpolation may ease this burden, 2D animation poses additional difficulties compared to photorealistic video. In this work, we address challenges unexplored in previous animation interpolation systems, with a focus on improving perceptual quality.
 
-While we can't release the new data collected in this work, our specific sources are listed in the paper supplementary, and our RRLD data collection pipeline is available below; this lets you either recreate our dataset or assemble your own datasets directly from source animations.
+**Key Contributions:**
+- 🎯 **SoftsplatLite (SSL)**: A forward-warping interpolation architecture with fewer trainable parameters and better perceptual performance
+- 📏 **Distance Transform Module (DTM)**: Leverages line proximity cues to correct aberrations in difficult solid-color regions
+- 📊 **RRLD Metric**: Restricted Relative Linear Discrepancy metric to automate the previously manual training data collection process
+- 👥 **User Study**: Establishes that LPIPS perceptual metric and chamfer line distance (CD) are more appropriate measures of quality than PSNR and SSIM
 
+---
 
-## setup
+## 📑 Table of Contents
 
-Make a copy of `./_env/machine_config.bashrc.template` to `./_env/machine_config.bashrc`, and set `$PROJECT_DN` to the absolute path of this repository folder.  The other variables are optional.
+- [Quick Start](#-quick-start)
+- [Colab Demo](#-colab-demo)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [Docker Setup](#-docker-setup-advanced)
+- [Evaluation](#-evaluation)
+- [Training](#-training)
+- [Downloads](#-downloads)
+- [Citation](#-citation)
 
-This project requires docker with a GPU.  Run these lines from the project directory to pull the image and enter a container; note these are bash scripts inside the `./make` folder, not `make` commands.  Alternatively, you can build the docker image yourself.
+---
 
-    make/docker_pull
-    make/shell_docker
-    # OR
-    make/docker_build
-    make/shell_docker
+## 🚀 Quick Start
 
+The fastest way to try the model:
 
-## evaluation
+**Option 1: Colab** (No setup required)  
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ShuhongChen/eisai-anime-interpolator/blob/master/_notebooks/eisai_colab_demo.ipynb)
 
-Run this line to reproduce the best-result metrics on ATD12k from our paper; the output should match up to precision differences (tested on GTX1080ti).
+**Option 2: Local Installation** (Conda)  
+See [Installation](#-installation) section below.
 
-    python3 -m _scripts.evaluate
+---
 
-    #  subset metric  score      
-    # ===========================
-    #  all    lpips   3.4943E-02 
-    #  all    chamfer 4.3505E-05 
-    #  all    psnr         29.29 
-    #  all    ssim         95.15 
-    #  east   lpips   3.8260E-02 
-    #  east   chamfer 4.9791E-05 
-    #  west   lpips   3.2915E-02 
-    #  west   chamfer 3.9660E-05
+## 🎮 Colab Demo
 
+Try the model in your browser without any installation! The notebook sets up the environment and runs the interpolation script automatically.
 
-## interpolate frames
+👉 [Open eisai_colab_demo.ipynb](https://colab.research.google.com/github/ShuhongChen/eisai-anime-interpolator/blob/master/_notebooks/eisai_colab_demo.ipynb)
+---
 
-Run this line to interpolate frames between two given images:
+## 📥 Downloads
 
-    python3 -m _scripts.interpolate \
-        /path/to/frame0.png \
-        /path/to/frame1.png \
-        --fps=12 \
-        --out=./temp/interpolate_demo_output
+All downloads can be found in the Google Drive folder: [eccv2022_eisai_anime_interpolator_release](https://drive.google.com/drive/folders/1AiZVgGej7Tpn95ats6967neIEPdShxWy?usp=sharing)
 
-> Note that this script uses RFR/RAFT flows without SGM initialization; please see our paper supplementary section on SGM computation tradeoffs.  Note also that due to package version differences, the RFR/RAFT flows here may be slightly different from the original AnimeInterp repo.
+### Required for Inference
 
+- **`checkpoints.zip`** - Extract to the root project directory
+  - Contains `ssl.pt`, `dtm.pt`, and `anime_interp_full.ckpt` (pretrained model from [AnimeInterp](https://github.com/lisiyao21/AnimeInterp))
+  - These checkpoints are all you need for inference
 
-## rrld data pipeline
+### Optional for Evaluation
 
-Run this line to extract training data from a source video using RRLD.  This script is all-in-one, consisting of: re-encoding, deduplication, RRLD filtering, triplet image extraction, and triplet flow estimation.
+- **ATD12k dataset** - Download from [AnimeInterp](https://github.com/lisiyao21/AnimeInterp)
+- **`rfr_540p.zip`** - Our repacked flows (SGM+RFR)
+  
+<details>
+<summary>📁 Expected file structure for evaluation</summary>
 
-    bash ./_scripts/rrld_pipeline.sh \
-        /path/to/video.mp4 \
-        ./temp/rrld_demo_output
+```
+_data/atd12k/
+    raw/
+        test_2k_540p/          # Raw image data from AnimeInterp
+            Disney_ ...
+            Japan_ ...
+    preprocessed/
+        rfr_540p/              # Precomputed flow pickles
+            test/
+                Disney_ ...
+                Japan_ ...
+```
 
-> Note that the flows here differ from our paper in that we use RFR/RAFT instead of [FlowNet2](https://github.com/NVIDIA/flownet2-pytorch).  This is done to simplify the repo; as discussed in the paper, RRLD is quite robust to choice of flow estimator.  Note also that unlike the paper, this script doesn't use [TransNetV2](https://github.com/soCzech/TransNetV2) to limit one sample per cut; this restriction can be reimposed by filtering `rrld.txt` before image extraction.
+> **Note:** Our repacked flows (SGM+RFR) differ from the AnimeInterp download (SGM only). The full SGM+RFR flows are [complicated to extract](https://github.com/lisiyao21/AnimeInterp/blob/b38358335fcd7361a199c1f7d899d457724ecee0/test_anime_sequence_one_by_one.py#L127) from their repo, so we provide them for convenience.
 
+</details>
 
-## training
+### Optional for Full User Study
 
-Run this line to train on RRLD-extracted data:
+- **`user_study_full.zip`** - Extract and open `index.html` in a browser supporting WEBP animations
 
-    python3 -m _train.frame_interpolation.train \
-        ./temp/rrld_demo_output \
-        ./temp/training_demo_output
+> While we can't release the new training data collected in this work, our specific sources are listed in the paper supplementary. Our RRLD data collection pipeline (below) allows you to recreate our dataset or assemble your own from source animations.
 
-> Note that this script is starter code adapted from our experiments, using the same hyperparameters as our best-performing experiment.
+---
 
+## 💻 Installation
 
-## full user study
+### Prerequisites
 
-Download and extract [`user_study_full.zip`](https://drive.google.com/file/d/1HzcjJpBq0ILBDofY5nkNnzZhHxrK5HVO/view?usp=sharing) from the downloads drive folder, and open `index.html` in a browser supporting WEBP animations.  You must extract the zip for the display to work properly.
+- Tested on: **Ubuntu 22.04 LTS** (other Linux distributions may work)
+- Recommended GPU: **NVIDIA RTX 3090** (with up-to-date NVIDIA drivers and CUDA)
+- Conda (Miniconda or Anaconda) — we recommend using conda environments
+- Python 3.x
 
+### Tested configuration
 
-## citing
+This repository has been verified to run successfully with the following setup:
 
-If you use our repo, please cite our work:
+- OS: Ubuntu 22.04 LTS
+- GPU: NVIDIA RTX 3090 (CUDA-compatible drivers)
+- Environment: Conda environment created from `environment.yml` and activated (`conda activate eisai_env`)
 
-    @inproceedings{chen2022eisai,
-        title={Improving the Perceptual Quality of 2D Animation Interpolation},
-        author={Chen, Shuhong and Zwicker, Matthias},
-        booktitle={Proceedings of the European Conference on Computer Vision},
-        year={2022}
-    }
+If you use a different configuration, you may still be able to run the code but results and exact package versions may vary.
 
+### Step 1: Install Miniconda
+
+If you don't have Miniconda installed:
+
+```bash
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+```
+
+### Step 2: Clone Repository
+
+```bash
+git clone https://github.com/ShuhongChen/eisai-anime-interpolator.git
+cd eisai-anime-interpolator
+```
+
+### Step 3: Create Environment
+
+```bash
+conda env create -f environment.yml
+conda activate eisai_env
+```
+
+### Step 4: Download Checkpoints
+
+Download `checkpoints.zip` from the [Google Drive folder](https://drive.google.com/drive/folders/1AiZVgGej7Tpn95ats6967neIEPdShxWy?usp=sharing) and extract it to the root project directory.
+
+---
+
+## 🎬 Usage
+
+### Basic Frame Interpolation
+
+Interpolate frames between two images:
+
+```bash
+mkdir -p ./temp/interpolate_demo_output
+
+python3 -m _scripts.interpolate \
+    ./demo_input/frame_001.png \
+    ./demo_input/frame_002.png \
+    --fps=12 \
+    --out=./temp/interpolate_demo_output
+```
+
+**Parameters:**
+- `--fps`: Number of frames per second for interpolation (controls how many intermediate frames are generated)
+- `--out`: Output directory for interpolated frames
+
+> **Note:** This script uses RFR/RAFT flows without SGM initialization. See our paper supplementary section on SGM computation tradeoffs. Due to package version differences, RFR/RAFT flows may differ slightly from the original AnimeInterp repo.
+
+### Custom Images
+
+```bash
+python3 -m _scripts.interpolate \
+    /path/to/frame0.png \
+    /path/to/frame1.png \
+    --fps=12 \
+    --out=./temp/output
+```
+
+---
+
+## 🐋 Docker Setup (Advanced)
+
+For users who prefer Docker (requires GPU support):
+
+### Step 1: Configure Environment
+
+Make a copy of the machine config template:
+
+```bash
+cp ./_env/machine_config.bashrc.template ./_env/machine_config.bashrc
+```
+
+Edit `./_env/machine_config.bashrc` and set `$PROJECT_DN` to the absolute path of this repository folder. Other variables are optional.
+
+### Step 2: Pull or Build Docker Image
+
+**Option A: Pull pre-built image**
+```bash
+make/docker_pull
+make/shell_docker
+```
+
+**Option B: Build image yourself**
+```bash
+make/docker_build
+make/shell_docker
+```
+
+> **Note:** These are bash scripts in the `./make` folder, not `make` commands.
+
+---
+
+## 📊 Evaluation
+
+---
+
+## 📊 Evaluation
+
+Reproduce the best-result metrics on ATD12k from our paper:
+
+```bash
+python3 -m _scripts.evaluate
+```
+
+### Expected Results
+
+Output should match up to precision differences (tested on GTX1080ti):
+
+| Subset | Metric  | Score      |
+|--------|---------|------------|
+| all    | lpips   | 3.4943E-02 |
+| all    | chamfer | 4.3505E-05 |
+| all    | psnr    | 29.29      |
+| all    | ssim    | 95.15      |
+| east   | lpips   | 3.8260E-02 |
+| east   | chamfer | 4.9791E-05 |
+| west   | lpips   | 3.2915E-02 |
+| west   | chamfer | 3.9660E-05 |
+
+---
+
+## 🎓 Training
+
+### RRLD Data Pipeline
+
+Extract training data from a source video using RRLD. This all-in-one script performs:
+- Re-encoding
+- Deduplication
+- RRLD filtering
+- Triplet image extraction
+- Triplet flow estimation
+
+```bash
+bash ./_scripts/rrld_pipeline.sh \
+    /path/to/video.mp4 \
+    ./temp/rrld_demo_output
+```
+
+> **Note:** The flows here use RFR/RAFT instead of [FlowNet2](https://github.com/NVIDIA/flownet2-pytorch) to simplify the repo. As discussed in the paper, RRLD is quite robust to choice of flow estimator. Unlike the paper, this script doesn't use [TransNetV2](https://github.com/soCzech/TransNetV2) to limit one sample per cut; this restriction can be reimposed by filtering `rrld.txt` before image extraction.
+
+### Train Model
+
+Train on RRLD-extracted data:
+
+```bash
+python3 -m _train.frame_interpolation.train \
+    ./temp/rrld_demo_output \
+    ./temp/training_demo_output
+```
+
+> **Note:** This starter code uses the same hyperparameters as our best-performing experiment.
+
+---
+
+## 📄 Citation
+
+If you use our work in your research, please cite our paper:
+
+```bibtex
+@inproceedings{chen2022eisai,
+    title={Improving the Perceptual Quality of 2D Animation Interpolation},
+    author={Chen, Shuhong and Zwicker, Matthias},
+    booktitle={Proceedings of the European Conference on Computer Vision},
+    year={2022}
+}
+```
+
+---
+
+## 📜 License
+
+See [license.txt](./license.txt) for details.
+
+---
+
+## 🙏 Acknowledgments
+
+This project builds upon [AnimeInterp](https://github.com/lisiyao21/AnimeInterp). We thank the authors for their foundational work.
+
+---
+
+<div align="center">
+
+**[⬆ Back to Top](#eisai-anime-interpolator)**
+
+Made with ❤️ for the animation community
+
+</div>
 
 
 
